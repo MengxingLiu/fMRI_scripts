@@ -1,6 +1,6 @@
 # Below are commands performing Inter-subject correlation(ISC) based analysis of fMRI data using AFNI.
-# I assume you already know something about Shell and AFNI if you are seeing this.
-# As you may know, there are at least two way to evaluate the coeffient between subjects in a group,which result in nearly identical correlation maps(Honey,2012)
+# I assume you already know something about Shell and AFNI when you are seeing this.
+# As you may know, there are at least two ways to evaluate the coeffient between subjects in a group,which result in nearly identical correlation maps(Honey,2012)
 # Here only one of them are introduced.
 # An correlation coeffients set is created through map of each subject correlating with the average map of the other individuals.
 # Be sure you get rid of the one time course which you are going to do correlation between it and group when you are averaging the time course of group.
