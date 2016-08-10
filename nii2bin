@@ -1,0 +1,31 @@
+% this function load the nii data to a mat file.
+function nii2bin(Data_path,Result_path)
+	tic;
+	name_list = dir(fullfile(Data_path,'*.nii'));
+	if length(name_list) < 2
+		error(['There is no "nii" data in ' Data_path '. Be sure you are giving the right directory or the file type is "nii"'])
+	end
+	Param.nsub = length(name_list);
+	if ~exist([Result_path '/data_mat'])
+		mkdir([Result_path '/data_mat'])
+	end
+	Param.resultpath = Result_path;
+	Param.mapdata = [Param.resultpath '/data_mat/'];
+	for n = 1:length(name_list)
+		fullPath = [Param.mapdata 'sub' sprintf('%02d',n) '.bin'];
+		if exist(fullPath)
+			continue
+		else		
+			I = load_nii([Data_path '/' name_list(n).name]);
+			I = single(I.img);
+			I = permute(I,[4 2 3 1]);
+			fullPath = [Param.mapdata 'sub' sprintf('%02d',n) '.bin'];
+			fid = fopen(fullPath, 'w');
+		    % write data to a binary file:
+		    fwrite(fid, I, 'single');clear I;
+		    fclose(fid);clear fid;
+		end
+	end
+	disp('Finished loading "nii" data into binary files')
+	toc;
+end
