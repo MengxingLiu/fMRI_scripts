@@ -1,4 +1,4 @@
-% this function load the nii data to a mat file.
+% this function load the nii data to a bin file.
 function nii2bin(Data_path,Result_path)
 	tic;
 	name_list = dir(fullfile(Data_path,'*.nii'));
