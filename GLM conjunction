@@ -1,0 +1,71 @@
+#!/bin/csh
+
+
+set anapath = "/Users/liumengxing/Research/Data_Analysis/Story_RL_ttest"
+	cd "$anapath"
+############# Cluster size from 3dClustSim  p=0.005 alpha=0.05 ########
+#### chn_L-R 32 	chn-listen 40 	chn_read  32	eng_L-R 33 	eng-listen 41 	eng_read 30	 ######
+################ mask thresholding ###################################################################
+						
+		foreach type("chn_L-R 0..1 -3.286 3.286 32" "chn_listen 2..3 -3.286 3.286 40" "chn_read 4..5 -3.286 3.286 32" "eng_L-R 6..7 -3.326 3.326 33" "eng_listen 8..9 -3.326 3.326 41" "eng_read 10..11 -3.326 3.326 30")
+				set tt=(`echo ${type} | awk '{print $1}'`)
+				set slc=(`echo ${type} | awk '{print $2}'`)
+				set nth=(`echo ${type} | awk '{print $3}'`)
+				set pth=(`echo ${type} | awk '{print $4}'`)
+				set cls=(`echo ${type} | awk '{print $5}'`)				
+				rm "$tt"_clust.nii
+				3dclust -prefix "$tt"_clust.nii \
+					-1Dformat -nosum -1dindex 0 -1tindex 1 \
+					-2thresh "$nth" "$pth" -inmask -dxyz=1 1.01 $cls \
+					"story_RL_glmt.nii[$slc]"
+		end
+		rm story_RL_clust.nii
+		3dbucket chn_L-R_clust.nii chn_listen_clust.nii chn_read_clust.nii \
+				eng_L-R_clust.nii eng_listen_clust.nii eng_read_clust.nii \
+				-prefix story_RL_clust.nii
+					
+#####conjunctions of listening and reading#######
+	
+###for chn ######
+			rm conj_*.nii
+		foreach lang(chn eng)
+### activation in Listening and Reading with positive value = 2 and negative value = 1 ########	
+### positive activation of Listening and Reading ####
+		
+			3dcalc -a "$lang"_listen_clust.nii\[0] \
+					-expr 'step(a)' \
+					-prefix mask_"$lang"_p_L.nii
+			3dcalc -a "$lang"_read_clust.nii\[0] \
+					-expr 'step(a)' \
+					-prefix mask_"$lang"_p_R.nii
+			3dcalc -a "$lang"_listen_clust.nii\[0] \
+					-expr 'isnegative(a)' \
+					-prefix mask_"$lang"_n_L.nii
+			3dcalc -a "$lang"_read_clust.nii\[0] \
+					-expr 'isnegative(a)' \
+					-prefix mask_"$lang"_n_R.nii
+			3dcalc -a mask_"$lang"_p_L.nii -b mask_"$lang"_p_R.nii \
+					-expr 'a*2+b' \
+					-prefix conj_"$lang"_p_RL.nii
+			3dcalc -a mask_"$lang"_n_L.nii -b mask_"$lang"_n_R.nii \
+					-expr 'a*2+b' \
+					-prefix conj_"$lang"_n_RL.nii
+					
+						
+		end
+
+### pRnL=6  nRnL=5 ##  only pL=4 nL=3 ### only pR=2 nR=1 ###
+		#	3dcalc -a conj_"$lang"_R+L.nii -b conj_"$lang"_L.nii -c conj_"$lang"_R.nii \
+	#				-expr 'a+(step(a)*4)+b+(step(b)*2)+c' \
+				#	-prefix conj_"$lang"_RL_np.nii
+		#	end
+	
+			# 3dbucket conj_chn_RL_np.nii conj_eng_RL_np.nii \
+			#		-prefix conj_story_RL_np.nii
+			
+### combine all the three maps above into one dataset #######
+			rm story_RL_conj.nii
+			3dbucket conj_chn_p_RL.nii conj_chn_n_RL.nii conj_eng_p_RL.nii conj_eng_n_RL.nii \
+					-prefix story_RL_conj.nii
+			3drefit -sublabel 0 chn_p -sublabel 1 chn_n -sublabel 2 eng_p -sublabel 3 eng_n \
+					 story_RL_conj.nii
