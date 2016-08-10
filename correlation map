@@ -1,0 +1,110 @@
+#!/bin/csh
+	set spath = "/Volumes/Mengxing/story/chinese/analysis"
+	
+	cd /Users/liumengxing/Dropbox/Research/Data_Analysis/Story_Corre
+	
+	rm chn*
+	rm eng*
+	3dTcat -prefix chn_listen_glm.nii \
+		$spath/sub01/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub02/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub03/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub04/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub05/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub06/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub07/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub08/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub09/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub10/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub11/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub12/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub13/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub14/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub15/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub16/GLM_glts_at+tlrc.nii.gz'[2]'
+	3dTcat -prefix chn_read_glm.nii \
+		$spath/sub01/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub02/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub03/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub04/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub05/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub06/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub07/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub08/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub09/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub10/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub11/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub12/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub13/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub14/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub15/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub16/GLM_glts_at+tlrc.nii.gz'[4]'
+	3dTCorrelate \
+		-prefix chn_correlation.nii -autoclip \
+		-pearson -polort -1 \
+		chn_listen_glm.nii chn_read_glm.nii
+	#Fisher's z transform
+	3dcalc -a chn_correlation.nii -expr '0.5*(log((1+a)/(1-a)))' -prefix z_chn_correlation.nii
+	#3drefit -addFDR chn_correlation.nii
+	#threshold = 0.8 cluster size = 50
+		set pth = 0.8
+		set cls = 50
+	3dclust -prefix clust_chn_corre.nii \
+		-1Dformat -nosum -1tindex 1 -noabs \
+		-1thresh "$pth" -inmask -dxyz=1 1.01 $cls \
+		chn_correlation.nii
+	
+	set spath = "/Volumes/Mengxing/story/english/analysis"
+	
+	3dTcat -prefix eng_listen_glm.nii \
+		$spath/sub01/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub02/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub03/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub04/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub05/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub06/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub07/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub09/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub10/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub11/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub13/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub14/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub15/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub16/GLM_glts_at+tlrc.nii.gz'[2]' \
+		$spath/sub17/GLM_glts_at+tlrc.nii.gz'[2]'
+	3dTcat -prefix eng_read_glm.nii \
+		$spath/sub01/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub02/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub03/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub04/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub05/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub06/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub07/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub09/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub10/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub11/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub13/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub14/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub15/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub16/GLM_glts_at+tlrc.nii.gz'[4]' \
+		$spath/sub17/GLM_glts_at+tlrc.nii.gz'[4]'
+	3dTCorrelate \
+		-prefix eng_correlation.nii \
+		-pearson -polort -1 -autoclip \
+		eng_listen_glm.nii eng_read_glm.nii
+	3dcalc -a eng_correlation.nii -expr '0.5*(log((1+a)/(1-a)))' -prefix z_eng_correlation.nii
+
+	3dcalc -a z_chn_correlation.nii -b z_eng_correlation.nii -expr '(a-b)/0.40032' -prefix contra_corre_chn_eng.nii
+	#3drefit -addFDR eng_correlation.nii
+	#threshold = 0.8 cluster size = 50
+		set pth = 0.8
+		set cls = 50
+	3dclust -prefix clust_eng_corre.nii \
+		-1Dformat -nosum -1tindex 1 -noabs \
+		-1thresh "$pth" -inmask -dxyz=1 1.01 $cls \
+		eng_correlation.nii
+		
+	3dcalc -prefix conj_corremap.nii \
+			-a clust_chn_corre.nii -b clust_eng_corre.nii \
+			-expr 'step(a)+2*step(b)'
+	3dcalc -a r_listening_chn_"$sub".nii -expr '0.5*(log((1+a)/(1-a)))' -prefix z_listening_chn_"$sub".nii
