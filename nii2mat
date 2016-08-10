@@ -1,0 +1,26 @@
+% this function load the nii data to a mat file.
+function nii2mat(Data_path,Result_path)
+	if nargin == 0
+		Data_path = '/media/max/Mengxing/StoryISC/listen_chn/';
+		Result_path = '/media/max/Mengxing/StoryISC/listen_chn_result/';
+	end
+	tic;
+	name_list = dir(fullfile(Data_path,'*.nii'));
+	if length(name_list) < 2
+		error(['There is no "nii" data in ' Data_path '. Be sure you are giving the right directory or the file type is "nii"'])
+	end
+	Param.nsub = length(name_list);
+	if ~exist([Result_path '/data_mat'])
+		mkdir([Result_path '/data_mat'])
+	end
+	Param.resultpath = Result_path;
+	Param.mapdata = [Param.resultpath '/data_mat/'];
+	for n = 1:length(name_list)
+		I = load_nii([Data_path '/' name_list(n).name]);
+		I = single(I.img);
+		Param.datasize(n,:) = size(I);
+		save([Param.mapdata 'sub' sprintf('%02d',n) '.mat'],'I','-v7.3');
+	end
+	disp('Finished loading "nii" data into mat files')
+	toc;
+end
