@@ -1,0 +1,140 @@
+#!/bin/csh
+
+set spath="/Volumes/Mengxing/story/chinese/analysis"
+
+
+foreach thresh(2.815 2.585 1.962)
+	foreach ctest("All 7" "listening 9" "reading 11" "listen-reading 13" "reading-listen 15")
+		set test=(`echo $ctest | awk '{print $1}'`)
+		set n=(`echo $ctest | awk '{print $2}'`)
+		cd /Volumes/Mengxing/story/chinese/Consensus_map
+		
+		echo "========================================================================="
+		echo "Consensus Mapping for:$test , read the data of colum: $n , t>= $thresh"
+		echo "========================================================================="
+		set infile= GLM_glts
+		foreach hemi (lh rh)
+			3dmerge \
+				-prefix "$hemi"_"$infile"_"$test"_"$thresh" \
+				-1noneg \
+				-1thresh $thresh \
+				-1tindex 0 \
+				-gcount \
+				"$spath"/sub01/Surface_files/"$hemi"_"$infile".1D\["$n"] \
+				"$spath"/sub02/Surface_files/"$hemi"_"$infile".1D\["$n"] \
+				"$spath"/sub03/Surface_files/"$hemi"_"$infile".1D\["$n"] \
+				"$spath"/sub04/Surface_files/"$hemi"_"$infile".1D\["$n"] \
+				"$spath"/sub05/Surface_files/"$hemi"_"$infile".1D\["$n"] \
+				"$spath"/sub06/Surface_files/"$hemi"_"$infile".1D\["$n"] \
+				"$spath"/sub07/Surface_files/"$hemi"_"$infile".1D\["$n"] \
+				"$spath"/sub08/Surface_files/"$hemi"_"$infile".1D\["$n"] \
+				"$spath"/sub09/Surface_files/"$hemi"_"$infile".1D\["$n"] \
+				"$spath"/sub10/Surface_files/"$hemi"_"$infile".1D\["$n"] \
+				"$spath"/sub11/Surface_files/"$hemi"_"$infile".1D\["$n"] \
+				"$spath"/sub12/Surface_files/"$hemi"_"$infile".1D\["$n"] \
+				"$spath"/sub13/Surface_files/"$hemi"_"$infile".1D\["$n"] \
+				"$spath"/sub14/Surface_files/"$hemi"_"$infile".1D\["$n"] \
+				"$spath"/sub15/Surface_files/"$hemi"_"$infile".1D\["$n"] \
+				"$spath"/sub16/Surface_files/"$hemi"_"$infile".1D\["$n"] 
+		end
+		
+			# Provide an index column for the results for 3dSurf2Vol
+		foreach hemi (lh rh)
+			1dcat "$spath"/sub01/Surface_files/"$hemi"_"$infile".1D\[0] \
+				"$hemi"_"$infile"_"$test"_"$thresh".1D \
+				>> "$hemi"_"$infile"_"$test"_"$thresh".dset
+				#rm "$hemi"_"$infile"_"$test"_"$thresh".1D
+		end
+	
+			# Put group results back into volume world 
+		foreach hemi (lh rh)
+			3dSurf2Vol \
+				-spec "$spath"/group/Freesurfer/SUMA/subAvg_"$hemi"+tlrc.spec \
+				-surf_A smoothwm \
+				-surf_B pial \
+				-sv "$spath"/group/subAvg_SurfVol_at+tlrc.nii.gz \
+				-grid_parent "$spath"/sub01/map2sub2g/ts_normalized+tlrc.nii.gz \
+				-sdata_1D "$hemi"_"$infile"_"$test"_"$thresh".dset \
+				-map_func max_abs \
+				-f_steps 15 \
+				-f_index voxels \
+				-prefix "$hemi"_"$infile"_"$test"_"$thresh"_sb
+		end
+	
+			# Put the hemispheres back together 
+			# Combine datasets by taking max signed intensity (e.g., -7 and 2 combine to -7)
+		3dmerge \
+			-prefix "$infile"_"$test"_"$thresh".nii \
+			-gsmax -doall \
+			lh_"$infile"_"$test"_"$thresh"_sb+tlrc. \
+			rh_"$infile"_"$test"_"$thresh"_sb+tlrc.
+#		3dcalc \
+#			-float -prefix "$infile"_"$test"_"$thresh".nii.gz  \
+#			-a lh_"$infile"_"$test"_"$thresh"_sb+tlrc. \
+#			-b rh_"$infile"_"$test"_"$thresh"_sb+tlrc. \
+#			-expr '(a+b)'
+#		rm ?h_"$infile"_"$test"_"$thresh"_sb+tlrc.*
+		
+			# Add labels and statistical parameters
+		3drefit \
+			-addFDR \
+			-sublabel 0 "$test":Count \
+			GLM_glts_"$test"_"$thresh".nii
+			
+	echo "============finished: "$test" on threshold: $thresh !============"
+	end
+		3dbucket \
+			GLM_glts_All_"$thresh".nii GLM_glts_listening_"$thresh".nii \
+			GLM_glts_reading_"$thresh".nii GLM_glts_listen-reading_"$thresh".nii \
+			GLM_glts_reading-listen_"$thresh".nii -prefix eng_consensusmap_"$thresh".nii
+end
+
+	foreach consen("chn 11" "eng 11")
+		set lang=(`echo $consen | awk '{print $1}'`)
+		set n=(`echo $consen | awk '{print $2}'`)
+		cd ~/Dropbox/Research/Data_Analysis/Story_ConsensusMap/ConsensusMap
+		
+##### for listening > 11
+		3dcalc -prefix mask_"$lang"_L.nii \
+			-a "$lang"_consensusmap_1.962.nii'[1]' \
+			-expr "a*step(a-"$n")"
+		
+##### for reading > 11
+		3dcalc -prefix mask_"$lang"_R.nii \
+			-a "$lang"_consensusmap_1.962.nii'[2]' \
+			-expr "a*step(a-"$n")"
+		
+##### conjunction of reading and listening
+		3dcalc -prefix mask_"$lang"_RL.nii \
+			-a mask_"$lang"_L.nii -b mask_"$lang"_R.nii \
+			-expr "(step(a))*2+step(b)"
+
+##### mask the group level result with the above mask for each task
+		3dcalc -prefix conj_"$lang"_RL.nii \
+			-a mask_"$lang"_RL.nii -b /Users/liumengxing/Research/Data_Analysis/Story_RL_ttest/backup_1202/conj_"$lang"_p_RL.nii \
+			-expr "(iszero(a-1)*iszero(b-1))+2*(iszero(a-2)*iszero(b-2))+3*(iszero(a-3)*iszero(b-3))"
+	end
+##### conjunction of Chn and Eng for listening
+		3dcalc -prefix conj_chn+eng_L.nii \
+			-a conj_chn_RL.nii -b conj_eng_RL.nii \
+			-expr '(iszero(a-2))*2+iszero(b-2)'
+			
+##### conjunction of Chn and Eng for reading
+		3dcalc -prefix conj_chn+eng_R.nii \
+			-a conj_chn_RL.nii -b conj_eng_RL.nii \
+			-expr '(iszero(a-1))*2+iszero(b-1)'
+			
+##### conjunction of Chn and Eng for R+L
+		3dcalc -prefix conj_chn+eng_RL.nii \
+			-a conj_chn_RL.nii -b conj_eng_RL.nii \
+			-expr '(iszero(a-3))*2+iszero(b-3)'
+		
+	3dbucket mask_chn_L.nii mask_chn_R.nii conj_chn_RL.nii mask_eng_L.nii mask_eng_R.nii \
+				conj_eng_RL.nii conj_chn+eng_L.nii conj_chn+eng_R.nii conj_chn+eng_RL.nii \
+				-prefix consensus_conj.nii
+				rm mask_*.nii
+				rm conj_*.nii
+	3drefit -sublabel 0 CHN:Listen -sublabel 1 CHN:Read -sublabel 2 CHN:L+R \
+			-sublabel 3 ENG:Listen -sublabel 4 ENG:Read -sublabel 5 ENG:L+R \
+			-sublabel 6 CHN+ENG:Listen -sublabel 7 CHN+ENG:Read -sublabel 8 CHN+ENG:L+R \
+			consensus_conj.nii
