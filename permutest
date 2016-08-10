@@ -1,0 +1,56 @@
+function permutest(result_path)
+	if nargin == 0
+		result_path = '/media/max/Mengxing/StoryISC/listen_chn_result/data_mat/';
+	end
+	tic;
+	name_list = dir(fullfile(result_path,'*.bin'));
+	name_list = strcat(result_path,extractfield(name_list(1:4),'name'));
+	bmask = load_nii('/media/max/Mengxing/StoryISC/2group/ts_all/mask_biling+tlrc.nii');
+	bmask = logical(single(bmask.img));	
+	x = 54;y = 64; z = 50; t = 266;		
+	nrPermutations = 100000;
+	iter = 0;
+	val = zeros(1,nrPermutations);
+	brainVoxels = find(bmask);
+	nrVoxels = length(brainVoxels);
+	nrTimePoints = t;
+	INDS = find(triu(ones(length(name_list),length(name_list)),1));
+%% generate random seed
+	randNro = sum(100*clock);
+	rand('state',randNro);
+%% generate list of voxles being choosed to calculate
+	randInds = ceil(nrVoxels*rand(nrPermutations,1)); 
+	randVoxels = brainVoxels(randInds);	
+	[vx,vy,vz] = ind2sub([x,y,z],randVoxels);	
+	[vx inds] = sort(vx); vy = vy(inds); vz = vz(inds);
+	
+	randTimePoints = ceil(nrTimePoints*rand(nrPermutations,length(name_list)));
+	cData = zeros(t,length(name_list));
+	val = zeros(nrPermutations,1);
+	sts = zeros(t,length(name_list));
+	for iter = 1:nrPermutations
+		for k = 1:length(name_list)
+			tmp = memmapfile(name_list{1,k},'format',{'single',[t,y,z],'tyz'});
+			cData(:,k) = tmp.Data(vx(iter)).tyz(:,vy(iter),vz(iter));
+			sts(:,k) = cData([randTimePoints(iter,k)+1:end 1:randTimePoints(iter,k)],k); % shuffle time-series
+		end
+		
+		xc = sts - repmat(sum(sts)/t,t,1);
+		c1 = (xc' * xc) / (t-1);
+		d1 = sqrt(diag(c1));
+		dd = d1*d1';
+		dd(1:k+1:end) = diag(c1); % remove roundoff on diag
+		r1 = c1 ./ dd;
+		r1 = r1(INDS);
+		val(iter) = single(mean(r1));
+		
+		if mod(iter,500) == 0
+			disp(['Realization number:' num2str(iter) '/' num2str(nrPermutations)])
+			disp(['Resampled ISC value: ' num2str(val(iter))])
+		end
+	end
+	
+	nn = ~isnan(val);
+	val = val(nn);
+	save('/media/max/Mengxing/StoryISC/listen_chn_result/data_mat/permutest.mat','val');
+	toc;
