@@ -22,7 +22,8 @@ mrdegibbs denoise.mif degibbs.mif
 dwiextract -bzero sub-02_dwi.mif - | mrmath - -axis 3 mean sub-02_b0_AP.mif
 mrcat sub-02_b0.mif sub-02_b0_AP.mif b0_pair.mif
 ## Motion & distortion correction
-dwifslpreproc degibbs.mif geomcorr.mif -pe_dir AP -rpe_pair -se_epi
-b0pair.mif
+dwifslpreproc degibbs.mif geomcorr.mif -pe_dir AP -rpe_pair -se_epi b0pair.mif
+
+
 
 
