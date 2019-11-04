@@ -46,9 +46,22 @@ dwi2response msmt_5tt biascorrect.mif 5ttseg.mif ms_5tt_wm.txt ms_5tt_gm.txt ms_
 ## fibre orientation distribution (fod) estimation
 dwi2fod msmt_csd -mask mask.mif biascorrect.mif ms_5tt_csf.txt ms_csf.mif ms_5tt_gm.txt ms_gm.mif ms_5tt_wm.txt ms_wm.mif
 ## intensity normalisation and bias field corretion
-mtnormalise wmfod.mif wmfod_norm.mif csf.mif csf_morm.mif -mask mask.mif 
+mtnormalise ms_wm.mif wmfod_norm.mif ms_csf.mif csf_morm.mif ms_gm.mif gm_norm.mif -mask mask.mif -force
 
+## tractography 
+mkdir -p tractography
+cd tractography
 
+### [Ex.1] whole brain tracking (with default algorithm & parameters) ###
+tckgen ../voxel_level_modelling/ms_wm.mif wbt_ifod2.tck \
+-seed_image ../mask.mif -select 100K
+tckinfo wbt_ifod2.tck
+mrview ../T1w.mif -tractography.load wbt_ifod2.tck &
+
+### [Ex.2] ROI-based tracking : cingulum ###
+# seed halfway the cing bundle
+tckgen ../voxel_level_modelling/ms_wm.mif cing_seeded.tck \
+-seed_sphere 4,5,24,5 -select 100
 
 
 
