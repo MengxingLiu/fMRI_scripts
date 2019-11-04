@@ -37,15 +37,18 @@ flirt -dof 6 -cost normmi -in raw/T1w -ref sub-02_b0_AP.mif -omat T_fsl.txt
 transformconvert T_fsl.txt T1w.nii.gz sub-02_b0_AP.nii.gz flirt_import T_T1toDWI.txt
 mrtransform -linear T_T1toDWI.txt T1w.nii.gz aT1w.nii.gz
 
-## WM and CSF response function estimation
-dwi2response dhollander biascorr.mif response_wm.txt response_gm.txt response_csf.txt
+## segmentation
+[ ! -f 5ttseg.mif ] && time 5ttten fsl aT1w.nii.gz 5ttseg.mif -force
+
+# WM response function estimation using T1 segmentation
+dwi2response msmt_5tt biascorrect.mif 5ttseg.mif ms_5tt_wm.txt ms_5tt_gm.txt ms_5tt_csf.txt -voxels ms_5tt_voxels.mif
 
 ## fibre orientation distribution (fod) estimation
-
-dwi2fod msmt_csd biascorr.mif response_wm.txt wmfod.mif response_csf.txt csf.mif -mask mask.mif
-
+dwi2fod msmt_csd -mask mask.mif biascorrect.mif ms_5tt_csf.txt ms_csf.mif ms_5tt_gm.txt ms_gm.mif ms_5tt_wm.txt ms_wm.mif
 ## intensity normalisation and bias field corretion
 mtnormalise wmfod.mif wmfod_norm.mif csf.mif csf_morm.mif -mask mask.mif 
+
+
 
 
 
